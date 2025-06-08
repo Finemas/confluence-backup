@@ -9,18 +9,13 @@ import (
 func main() {
 	fmt.Println("🚀 Confluence backup tool started")
 
-	LoadEnv() // from config.go
+	config := LoadConfig()
 
-	baseURL := GetEnv("DRMAX_CONFLUENCE_BASE")
-	email := GetEnv("DRMAX_CONFLUENCE_EMAIL")
-	token := GetEnv("DRMAX_CONFLUENCE_TOKEN")
-	spaceKey := GetEnv("DRMAX_SPACE_KEY")
-
-	pages, err := FetchAllPages(baseURL, email, token, spaceKey)
+	pages, err := FetchAllPages(config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("All pages(%d)", len(pages))
+	fmt.Printf("All pages(%d)\n", len(pages))
 
 	currentPages := FilterPages(pages, func(p Page) bool {
 		return p.Status == "current"
