@@ -1,22 +1,32 @@
 package main
 
 type Page struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Status string `json:"status"` // 👈 Add this line
+	ID         string     `json:"id"`
+	Title      string     `json:"title"`
+	Type       string     `json:"type"`
+	Status     string     `json:"status"`
+	Body       PageBody   `json:"body"`
+	Ancestors  []Ancestor `json:"ancestors"`
+	Space      Space      `json:"space"`
+	Extensions struct {
+		ContentRepresentation struct {
+			View string `json:"view"`
+		} `json:"content-representation"`
+	} `json:"extensions"`
+}
 
-	Body struct {
-		Storage struct {
-			Value string `json:"value"`
-		} `json:"storage"`
-	} `json:"body"`
-
-	Ancestors []Ancestor `json:"ancestors"`
+type PageBody struct {
+	Storage struct {
+		Value string `json:"value"`
+	} `json:"storage"`
 }
 
 type Ancestor struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID string `json:"id"`
+}
+
+type Space struct {
+	Key string `json:"key"`
 }
 
 type PageResponse struct {

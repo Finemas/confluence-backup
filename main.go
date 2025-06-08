@@ -11,21 +11,40 @@ func main() {
 
 	config := LoadConfig()
 
-	pages, err := FetchAllPages(config)
+	// Step 1: Fetch all pages
+	pages, err := fetchAllPagesByCQL(config)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("fetch error: %v", err)
 	}
-	fmt.Printf("All pages(%d)\n", len(pages))
+	fmt.Printf("Fetched %d pages\n", len(pages))
 
-	currentPages := FilterPages(pages, func(p Page) bool {
-		return p.Status == "current"
-	})
-	fmt.Printf("Current pages(%d)\n", len(currentPages))
+	// Step 2: Build tree structure from flat list
+	tree := BuildPageTree(pages)
 
-	rootPages := FilterPages(currentPages, func(p Page) bool {
-		return len(p.Ancestors) == 1
-	})
-	fmt.Printf("Root pages(%d)\n", len(rootPages))
+	// Step 3: Print tree to terminal
+	fmt.Println("📁 Page Tree:")
+	PrintTree(tree, "")
+
+	// trees := buildTreeFromAncestors(pages)
+	// for _, root := range trees {
+	// 	printTree(root, "")
+	// }
+
+	// pages, err := FetchAllPages(config)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("All pages(%d)\n", len(pages))
+
+	// currentPages := FilterPages(pages, func(p Page) bool {
+	// 	return p.Status == "current"
+	// })
+	// fmt.Printf("Current pages(%d)\n", len(currentPages))
+
+	// rootPages := FilterPages(currentPages, func(p Page) bool {
+	// 	return len(p.Ancestors) == 1
+	// })
+	// fmt.Printf("Root pages(%d)\n", len(rootPages))
 
 	// for _, page := range rootPages {
 	// 	fmt.Println("-", page.Title, page.ID)
@@ -35,11 +54,11 @@ func main() {
 	// 	}
 	// }
 
-	pageID := "3478781981"
-	jsonErr := PrintPageJSONByID(pageID, config)
-	if jsonErr != nil {
-		fmt.Println("OOPPPS")
-	}
+	// pageID := "3478781981"
+	// jsonErr := PrintPageJSONByID(pageID, config)
+	// if jsonErr != nil {
+	// 	fmt.Println("OOPPPS")
+	// }
 
 	// pageTitle := "Mobile DevOps"
 	// pageID, pageErr := GetPageIDByTitleInSpace(pageTitle, config)
@@ -67,22 +86,6 @@ func main() {
 	// for _, p := range myPages {
 	// 	fmt.Printf("• %s (%s)\n", p.Title, p.ID)
 	// }
-}
-
-func PrintChildrenRecursive(parentID string, indent string, cfg Config) error {
-	children, err := FetchChildPages(parentID, cfg)
-	if err != nil {
-		return err
-	}
-
-	for _, child := range children {
-		fmt.Printf("%s- %s [%s]\n", indent, child.Title, child.ID)
-		if err := PrintChildrenRecursive(child.ID, indent+"  ", cfg); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func FilterPages(pages []Page, match func(Page) bool) []Page {
