@@ -1,14 +1,17 @@
 package main
 
 type Page struct {
-	ID        string     `json:"id"`
-	Title     string     `json:"title"`
-	Ancestors []Ancestor `json:"ancestors"`
-	Body      struct {
+	ID     string `json:"id"`
+	Title  string `json:"title"`
+	Status string `json:"status"` // 👈 Add this line
+
+	Body struct {
 		Storage struct {
 			Value string `json:"value"`
 		} `json:"storage"`
 	} `json:"body"`
+
+	Ancestors []Ancestor `json:"ancestors"`
 }
 
 type Ancestor struct {

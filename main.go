@@ -16,16 +16,41 @@ func main() {
 	token := GetEnv("DRMAX_CONFLUENCE_TOKEN")
 	spaceKey := GetEnv("DRMAX_SPACE_KEY")
 
-	pageTitle := "Mobile DevOps"
-	pageID, pageErr := GetPageIDByTitleInSpace(baseURL, email, token, spaceKey, pageTitle)
-	if pageErr != nil {
-		log.Fatal(pageErr)
-	}
-	fmt.Println(pageID)
-	err := FetchFullPageJSON(baseURL, email, token, spaceKey, pageTitle)
+	pages, err := FetchAllPages(baseURL, email, token, spaceKey)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("All pages(%d)", len(pages))
+
+	currentPages := FilterPages(pages, func(p Page) bool {
+		return p.Status == "current"
+	})
+	fmt.Printf("Current pages(%d)\n", len(currentPages))
+
+	rootPages := FilterPages(currentPages, func(p Page) bool {
+		return len(p.Ancestors) == 1
+	})
+	fmt.Printf("Root pages(%d)\n", len(rootPages))
+
+	for _, page := range rootPages {
+		fmt.Println("-", page.Title, page.ID)
+	}
+
+	// jsonErr := PrintPageJSONByID(baseURL, email, token, spaceKey, "3325100062")
+	// if jsonErr != nil {
+	// 	log.Fatal(jsonErr)
+	// }
+
+	// pageTitle := "Mobile DevOps"
+	// pageID, pageErr := GetPageIDByTitleInSpace(baseURL, email, token, spaceKey, pageTitle)
+	// if pageErr != nil {
+	// 	log.Fatal(pageErr)
+	// }
+	// fmt.Println(pageID)
+
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// children, err2 := FetchChildPages(baseURL, email, token, "4527652884")
 	// if err2 != nil {
@@ -61,4 +86,14 @@ func main() {
 	// for _, p := range myPages {
 	// 	fmt.Printf("• %s (%s)\n", p.Title, p.ID)
 	// }
+}
+
+func FilterPages(pages []Page, match func(Page) bool) []Page {
+	var result []Page
+	for _, p := range pages {
+		if match(p) {
+			result = append(result, p)
+		}
+	}
+	return result
 }

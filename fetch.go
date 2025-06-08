@@ -46,17 +46,18 @@ func PrintRawJSON(url, email, token string) error {
 }
 
 func FetchAllPages(baseURL, email, token, spaceKey string) ([]Page, error) {
-	params := url.Values{}
-	params.Set("type", "page")
-	params.Set("spaceKey", spaceKey)
-	params.Set("expand", "body.storage,ancestors")
-	params.Set("limit", "100")
-
-	nextURL := fmt.Sprintf("%s/rest/api/content?%s", baseURL, params.Encode())
 	var allPages []Page
+	start := 0
 
-	for nextURL != "" {
-		req, err := BuildRequest(nextURL, email, token)
+	for {
+		url := fmt.Sprintf(
+			"%s/rest/api/content?type=page&spaceKey=%s&limit=100&start=%d&expand=ancestors,body.storage,metadata.properties.archived",
+			baseURL,
+			spaceKey,
+			start,
+		)
+
+		req, err := BuildRequest(url, email, token)
 		if err != nil {
 			return nil, err
 		}
@@ -67,95 +68,51 @@ func FetchAllPages(baseURL, email, token, spaceKey string) ([]Page, error) {
 		}
 		defer resp.Body.Close()
 
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
+		data, _ := io.ReadAll(resp.Body)
+
+		var result PageResponse
+		if err := json.Unmarshal(data, &result); err != nil {
 			return nil, err
 		}
 
-		var pretty map[string]interface{}
-		if err := json.Unmarshal(data, &pretty); err != nil {
-			return nil, fmt.Errorf("json unmarshal: %w", err)
+		allPages = append(allPages, result.Results...)
+
+		if result.Links.Next == "" {
+			break
 		}
-
-		jsonText, _ := json.MarshalIndent(pretty, "", "  ")
-		fmt.Println(string(jsonText))
-
-		// var parsed PageResponse
-		// if err := json.Unmarshal(data, &parsed); err != nil {
-		// 	return nil, err
-		// }
-
-		// allPages = append(allPages, parsed.Results...)
-
-		// if parsed.Links.Next != "" {
-		// 	nextURL = baseURL + parsed.Links.Next
-		// } else {
-		// 	nextURL = ""
-		// }
+		start += len(result.Results)
 	}
 
 	return allPages, nil
 }
 
-func FetchFullPageJSON(baseURL, email, token, spaceKey, title string) error {
-	// 1. Search the page by title and space
-	cql := fmt.Sprintf(`type=page AND space="%s" AND title ~ "%s"`, spaceKey, title)
-	query := url.QueryEscape(cql)
-	searchURL := fmt.Sprintf("%s/rest/api/content/search?cql=%s", baseURL, query)
+func PrintPageJSONByID(baseURL, email, token, spacekey, pageID string) error {
+	expand := url.QueryEscape("body.storage,ancestors,metadata.properties.archived,space,version")
+	url := fmt.Sprintf("%s/rest/api/content/%s?spaceKey=%s&expand=%s", baseURL, pageID, spacekey, expand)
 
-	req, err := BuildRequest(searchURL, email, token)
+	req, err := BuildRequest(url, email, token)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("http call failed: %w", err)
+		return fmt.Errorf("http request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	searchData, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("read search response: %w", err)
-	}
-
-	var searchResult PageResponse
-	if err := json.Unmarshal(searchData, &searchResult); err != nil {
-		return fmt.Errorf("unmarshal search response: %w", err)
-	}
-
-	if len(searchResult.Results) == 0 {
-		return fmt.Errorf("no page found for title: %s", title)
-	}
-
-	pageID := searchResult.Results[0].ID
-	fmt.Println("✅ Found page ID:", pageID)
-
-	// 2. Fetch the full page by ID
-	fullURL := fmt.Sprintf("%s/rest/api/content/%s?expand=body.storage,ancestors", baseURL, pageID)
-	req2, err := BuildRequest(fullURL, email, token)
-	if err != nil {
-		return fmt.Errorf("build full request: %w", err)
-	}
-
-	resp2, err := http.DefaultClient.Do(req2)
-	if err != nil {
-		return fmt.Errorf("http call failed: %w", err)
-	}
-	defer resp2.Body.Close()
-
-	pageData, err := io.ReadAll(resp2.Body)
-	if err != nil {
-		return fmt.Errorf("read full page body: %w", err)
+		return fmt.Errorf("read body: %w", err)
 	}
 
 	var pretty map[string]interface{}
-	if err := json.Unmarshal(pageData, &pretty); err != nil {
-		return fmt.Errorf("unmarshal page json: %w", err)
+	if err := json.Unmarshal(data, &pretty); err != nil {
+		return fmt.Errorf("unmarshal json: %w", err)
 	}
 
-	out, _ := json.MarshalIndent(pretty, "", "  ")
-	fmt.Println(string(out))
+	output, _ := json.MarshalIndent(pretty, "", "  ")
+	fmt.Println(string(output))
 	return nil
 }
 
