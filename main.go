@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
 func main() {
@@ -15,13 +16,31 @@ func main() {
 	token := GetEnv("DRMAX_CONFLUENCE_TOKEN")
 	spaceKey := GetEnv("DRMAX_SPACE_KEY")
 
-	pages, err := FetchAllPages(baseURL, email, token, spaceKey)
+	pageTitle := "Mobile DevOps"
+	pageID, pageErr := GetPageIDByTitleInSpace(baseURL, email, token, spaceKey, pageTitle)
+	if pageErr != nil {
+		log.Fatal(pageErr)
+	}
+	fmt.Println(pageID)
+	err := FetchFullPageJSON(baseURL, email, token, spaceKey, pageTitle)
 	if err != nil {
-		panic(fmt.Errorf("❌ Fetch failed: %w", err))
+		log.Fatal(err)
 	}
 
-	fmt.Printf("📚 Total pages fetched: %d\n\n", len(pages))
-	PrintPagesTree(pages)
+	// children, err2 := FetchChildPages(baseURL, email, token, "4527652884")
+	// if err2 != nil {
+	// 	log.Fatal(err2)
+	// }
+	// for _, c := range children {
+	// 	fmt.Printf("📄 %s (%s)\n", c.Title, c.ID)
+	// }
+	// pages, err := FetchAllPages(baseURL, email, token, spaceKey)
+	// if err != nil {
+	// 	panic(fmt.Errorf("❌ Fetch failed: %w", err))
+	// }
+
+	// fmt.Printf("📚 Total pages fetched: %d\n\n", len(pages))
+	// PrintPagesTree(pages)
 
 	// // 1. Fetch all structured pages
 	// pages, _ := FetchAllPages(baseURL, email, token, spaceKey)
