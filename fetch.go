@@ -95,8 +95,11 @@ func fetchAllPagesByCQL(cfg Config) ([]Page, error) {
 
 	// Construct the initial request URL using CQL
 	cql := fmt.Sprintf("space=\"%s\" AND type IN (page, folder)", cfg.SpaceKey)
+	cqlContext := `{"spaceKey":"` + cfg.SpaceKey + `","contentStatuses":["current","archived"]}`
+
 	params := url.Values{}
 	params.Set("cql", cql)
+	params.Set("cqlcontext", cqlContext)
 	params.Set("limit", "100")
 	params.Set("expand", "ancestors")
 
