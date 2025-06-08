@@ -71,12 +71,12 @@ func PrintPageJSONByID(pageID string, cfg Config) error {
 }
 
 func FetchChildPages(parentID string, cfg Config) ([]Page, error) {
-	var children []Page
+	var allChildren []Page
 	start := 0
 
 	for {
 		url := fmt.Sprintf(
-			"%s/rest/api/content/%s/child/page?limit=100&start=%d&expand=body.storage,ancestors",
+			"%s/rest/api/content/%s/child/page?limit=100&start=%d&expand=body.storage,metadata.properties.archived",
 			cfg.BaseURL,
 			parentID,
 			start,
@@ -89,15 +89,20 @@ func FetchChildPages(parentID string, cfg Config) ([]Page, error) {
 
 		data, err := DoRequest(req)
 		if err != nil {
-			return nil, fmt.Errorf("read response: %w", err)
+			return nil, fmt.Errorf("do request: %w", err)
 		}
 
 		var result PageResponse
 		if err := json.Unmarshal(data, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal: %w", err)
+			return nil, fmt.Errorf("unmarshal response: %w", err)
 		}
 
-		children = append(children, result.Results...)
+		// Defensive: ensure children have valid IDs and titles
+		for _, page := range result.Results {
+			if page.ID != "" && page.Title != "" {
+				allChildren = append(allChildren, page)
+			}
+		}
 
 		if result.Links.Next == "" {
 			break
@@ -105,7 +110,7 @@ func FetchChildPages(parentID string, cfg Config) ([]Page, error) {
 		start += len(result.Results)
 	}
 
-	return children, nil
+	return allChildren, nil
 }
 
 func GetPageIDByTitleInSpace(title string, cfg Config) (string, error) {

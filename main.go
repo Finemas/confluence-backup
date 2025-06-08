@@ -27,40 +27,26 @@ func main() {
 	})
 	fmt.Printf("Root pages(%d)\n", len(rootPages))
 
-	for _, page := range rootPages {
-		fmt.Println("-", page.Title, page.ID)
-	}
+	// for _, page := range rootPages {
+	// 	fmt.Println("-", page.Title, page.ID)
 
-	// jsonErr := PrintPageJSONByID(baseURL, email, token, spaceKey, "3325100062")
-	// if jsonErr != nil {
-	// 	log.Fatal(jsonErr)
+	// 	if strings.Contains(page.Title, "Mobile DevOps") {
+	// 		PrintChildrenRecursive(page.ID, "\t", config)
+	// 	}
 	// }
 
+	pageID := "3478781981"
+	jsonErr := PrintPageJSONByID(pageID, config)
+	if jsonErr != nil {
+		fmt.Println("OOPPPS")
+	}
+
 	// pageTitle := "Mobile DevOps"
-	// pageID, pageErr := GetPageIDByTitleInSpace(baseURL, email, token, spaceKey, pageTitle)
+	// pageID, pageErr := GetPageIDByTitleInSpace(pageTitle, config)
 	// if pageErr != nil {
 	// 	log.Fatal(pageErr)
 	// }
 	// fmt.Println(pageID)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// children, err2 := FetchChildPages(baseURL, email, token, "4527652884")
-	// if err2 != nil {
-	// 	log.Fatal(err2)
-	// }
-	// for _, c := range children {
-	// 	fmt.Printf("📄 %s (%s)\n", c.Title, c.ID)
-	// }
-	// pages, err := FetchAllPages(baseURL, email, token, spaceKey)
-	// if err != nil {
-	// 	panic(fmt.Errorf("❌ Fetch failed: %w", err))
-	// }
-
-	// fmt.Printf("📚 Total pages fetched: %d\n\n", len(pages))
-	// PrintPagesTree(pages)
 
 	// // 1. Fetch all structured pages
 	// pages, _ := FetchAllPages(baseURL, email, token, spaceKey)
@@ -81,6 +67,22 @@ func main() {
 	// for _, p := range myPages {
 	// 	fmt.Printf("• %s (%s)\n", p.Title, p.ID)
 	// }
+}
+
+func PrintChildrenRecursive(parentID string, indent string, cfg Config) error {
+	children, err := FetchChildPages(parentID, cfg)
+	if err != nil {
+		return err
+	}
+
+	for _, child := range children {
+		fmt.Printf("%s- %s [%s]\n", indent, child.Title, child.ID)
+		if err := PrintChildrenRecursive(child.ID, indent+"  ", cfg); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func FilterPages(pages []Page, match func(Page) bool) []Page {
