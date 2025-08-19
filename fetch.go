@@ -10,6 +10,28 @@ import (
 	"time"
 )
 
+func FetchPageByID(pageID string, cfg Config) (*Page, error) {
+	expand := url.QueryEscape("body.storage,ancestors,metadata.properties.archived,space,version")
+	url := fmt.Sprintf("%s/%s/%s?spaceKey=%s&expand=%s", cfg.BaseURL, AllPages, pageID, cfg.SpaceKey, expand)
+
+	req, err := BuildRequest(url, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+
+	data, err := DoRequest(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	var page Page
+	if err := json.Unmarshal(data, &page); err != nil {
+		return nil, fmt.Errorf("unmarshal json: %w", err)
+	}
+
+	return &page, nil
+}
+
 func fetchAllPagesByCQL(cfg Config) ([]Page, error) {
 	var allPages []Page
 
